@@ -4,6 +4,7 @@ use std::io::{BufRead, BufReader};
 // use std::collections::{HashMap, HashSet};
 use std::collections::HashMap;
 use std::iter::zip;
+use std::fmt;
 use regex::Regex;
 
 fn main () {
@@ -28,7 +29,6 @@ fn main () {
     println!("Solution:\n{t:#?}");
 }
 
-#[derive(Debug)]
 struct Sudoku {
     grid: Vec<Vec<u8>>
 }
@@ -59,6 +59,23 @@ impl Sudoku {
             sol_grid[i][j] = k;
         }
         return Sudoku { grid: sol_grid };
+    }
+}
+
+impl fmt::Debug for Sudoku {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        for row in &self.grid {
+            for &digit in row {
+                if digit == 0 {
+                    write!(f, "{}", " ")?
+                }
+                else {
+                    write!(f, "{}", digit)?
+                }
+            }
+            write!(f, "{}", "\n")?
+        }
+        Ok(())
     }
 }
 
