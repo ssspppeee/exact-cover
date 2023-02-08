@@ -9,6 +9,7 @@ use regex::Regex;
 
 fn main () {
     let args: Vec<String> = env::args().collect();
+    /*
     let file_path = &args[1];
 
     let s = Sudoku::read(file_path);
@@ -27,10 +28,27 @@ fn main () {
     let t = s.read_exact_cover(ec, sol);
 
     println!("Solution:\n{t:#?}");
+    */
+
+    let problem = &args[1];
+    println!("Problem:\t{}", &problem);
+
+    let sol = solve_sudoku(&problem);
+    println!("Solution:\t{}", &sol);
 }
 
 struct Sudoku {
     grid: Vec<Vec<u8>>
+}
+
+fn solve_sudoku(s_str: &String) -> String {
+
+    let s = Sudoku::from_string(&s_str);
+    let e = sudoku_to_exact_cover(&s);
+    let mut solver = init_solver(&e);
+    let e_sol = solver.solve();
+    let s_sol = s.read_exact_cover(e, e_sol);
+    return s_sol.to_string();
 }
 
 impl Sudoku {
@@ -43,6 +61,22 @@ impl Sudoku {
                      .collect())
                 .collect()
         }
+    }
+
+    fn from_string(s: &String) -> Self {
+        return Sudoku { 
+            grid: (0..9)
+                .map(|r| (0..9)
+                     .map(|c| (s.as_bytes()[r*9 + c] - 48) as u8).collect::<Vec<_>>())
+                .collect::<Vec<Vec<_>>>()
+        }
+    }
+
+    fn to_string(&self) -> String {
+        return self.grid.iter()
+            .flat_map(|r| r.iter()
+                      .map(|d| d.to_string()))
+            .collect::<String>();
     }
 
     fn read_exact_cover(self, ec: ExactCover, s: ExactCoverSolution) -> Self {
@@ -340,7 +374,7 @@ fn sudoku_to_exact_cover(sudoku: &Sudoku) -> ExactCover {
     let mut name = names.keys().cloned().cloned().collect::<Vec<Item>>();
     name.insert(0, String::from(""));
     let name2idx = zip(name.clone(), 0..name.len()).collect::<HashMap<_, _>>();
-    println!("{:#?}", choices);
+    // println!("{:#?}", choices);
     return ExactCover {
         items: name,
         choices: choices.iter()
@@ -349,4 +383,25 @@ fn sudoku_to_exact_cover(sudoku: &Sudoku) -> ExactCover {
                  .collect())
             .collect()
     }
+}
+
+#[test]
+fn sudoku_test1() {
+    let problem  = "209000600040870012800019040030700801065008030100030007000650709604000020080301450".to_string();
+    let solution = "219543678543876912876219345432765891765198234198432567321654789654987123987321456".to_string();
+    assert_eq!(&solve_sudoku(&problem), &solution);
+}
+
+#[test]
+fn sudoku_test2() {
+    let problem  = "946008500080500000000000800002000400005300080003070000008024701030050020004700000".to_string();
+    let solution = "946238517281547369357619842692185473475392186813476295568924731739851624124763958".to_string();
+    assert_eq!(&solve_sudoku(&problem), &solution);
+}
+
+#[test]
+fn sudoku_test3() {
+    let problem  = "509000007080010520003084001090700002400050390802100004000302005040000700107090080".to_string();
+    let solution = "519623847684917523723584961396748152471256398852139674968372415245861739137495286".to_string();
+    assert_eq!(&solve_sudoku(&problem), &solution);
 }
