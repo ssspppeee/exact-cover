@@ -1,7 +1,4 @@
 use std::env;
-use std::fs;
-use std::io::{BufRead, BufReader};
-// use std::collections::{HashMap, HashSet};
 use std::collections::HashMap;
 use std::iter::zip;
 use std::fmt;
@@ -9,26 +6,6 @@ use regex::Regex;
 
 fn main () {
     let args: Vec<String> = env::args().collect();
-    /*
-    let file_path = &args[1];
-
-    let s = Sudoku::read(file_path);
-
-    println!("Problem:");
-    println!("{:#?}", s);
-
-    let ec = sudoku_to_exact_cover(&s);
-
-    let mut solver = init_solver(&ec);
-
-    let sol = solver.solve();
-
-    println!("Solution raw:\n{sol:#?}");
-    
-    let t = s.read_exact_cover(ec, sol);
-
-    println!("Solution:\n{t:#?}");
-    */
 
     let problem = &args[1];
     println!("Problem:\t{}", &problem);
@@ -52,16 +29,6 @@ fn solve_sudoku(s_str: &String) -> String {
 }
 
 impl Sudoku {
-    fn read(file_path: &str) -> Self {
-        return Self {
-            grid: BufReader::new(fs::File::open(file_path).unwrap())
-                .lines()
-                .map(|row| row.unwrap().chars().collect::<Vec<_>>().iter()
-                     .map(|digit| digit.to_digit(10).unwrap() as u8)
-                     .collect())
-                .collect()
-        }
-    }
 
     fn from_string(s: &String) -> Self {
         return Sudoku { 
@@ -114,15 +81,12 @@ impl fmt::Debug for Sudoku {
 }
 
 type Item = String;
-// struct Choice<'a>(Vec<&'a Item>);
 type Choice = Vec<usize>;
 struct ExactCover {
     items:   Vec<Item>,
     choices: Vec<Choice>
 }
-struct ExactCoverSolver<'a> {
-    ec: &'a ExactCover,
-    name: Vec<String>,
+struct ExactCoverSolver {
     toplen: Vec<i32>,
     llink: Vec<i32>,
     rlink: Vec<i32>,
@@ -131,9 +95,9 @@ struct ExactCoverSolver<'a> {
 }
 type ExactCoverSolution = Vec<usize>;
 
-fn init_solver<'a>(e: &'a ExactCover) -> ExactCoverSolver<'a> {
+fn init_solver<'a>(e: &'a ExactCover) -> ExactCoverSolver {
     let n_items = (e.items.len() - 1) as i32;
-    let name2idx = zip(e.items.clone(), 0..=n_items).collect::<HashMap<_, _>>();
+    // let name2idx = zip(e.items.clone(), 0..=n_items).collect::<HashMap<_, _>>();
 
     let mut llink: Vec<i32> = (0..n_items).collect();
     llink.insert(0, n_items);
@@ -146,8 +110,8 @@ fn init_solver<'a>(e: &'a ExactCover) -> ExactCoverSolver<'a> {
     let mut ulink: Vec<i32> = vec![0; count as usize];
     let mut toplen: Vec<i32> = vec![0; count as usize];
     for (r, row) in e.choices.iter().enumerate() {
-        let mut first_item = count;
-        for (c, &val) in row.iter().enumerate() {
+        let first_item = count;
+        for (_c, &val) in row.iter().enumerate() {
             toplen[val] += 1;
             toplen.push(val as i32);
             ulink.push(prev[&(val as i32)]);
@@ -163,7 +127,7 @@ fn init_solver<'a>(e: &'a ExactCover) -> ExactCoverSolver<'a> {
         ulink[i as usize] = prev[&i];
     }
     let mut dlink: Vec<i32> = vec![0; ulink.len()];
-    for (i, val) in ulink.iter().enumerate() {
+    for (i, _val) in ulink.iter().enumerate() {
         if toplen[i] > 0 {
             dlink[ulink[i] as usize] = i as i32;
         }
@@ -176,8 +140,6 @@ fn init_solver<'a>(e: &'a ExactCover) -> ExactCoverSolver<'a> {
         }
     }
     return ExactCoverSolver { 
-        ec: e,
-        name: e.items.clone(),
         toplen: toplen,
         llink: llink, 
         rlink: rlink,
@@ -187,13 +149,13 @@ fn init_solver<'a>(e: &'a ExactCover) -> ExactCoverSolver<'a> {
 }
 
 
-impl ExactCoverSolver<'_> {
+impl ExactCoverSolver {
     fn solve(&mut self) -> ExactCoverSolution {
         // X1
-        let N = self.llink.len() - 1;
-        let Z = self.toplen.len() - 1;
+        let n = self.llink.len() - 1;
+        // let Z = self.toplen.len() - 1;
         let mut l = 0;
-        let mut x = vec![0; N];
+        let mut x = vec![0; n];
         // X2
         while self.rlink[0] != 0 {
             // X3
